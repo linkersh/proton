@@ -1,0 +1,37 @@
+import { ProtonClient } from "../core/client/ProtonClient";
+import {
+   CommandInteraction,
+   GuildTextableChannel,
+   Constants,
+   ApplicationCommandOption,
+} from "eris";
+import Command from "../core/structs/ClientCommand";
+
+const { ApplicationCommandOptionTypes: OptionType } = Constants;
+
+export default class RankCard extends Command {
+   constructor(client: ProtonClient) {
+      super(client);
+   }
+   name = "rank-card";
+   description = "Manage your rank-card image and color in this server.";
+   type = Constants.ApplicationCommandTypes.CHAT_INPUT;
+   options = [
+      {
+         type: OptionType.SUB_COMMAND,
+         name: "image",
+         description: "Set an image for your rank card",
+         options: [
+            {
+               type: 11, // ATTACHMENT_OPTION_TYPE
+               name: "",
+               description: "",
+            },
+         ],
+      },
+   ] as unknown as ApplicationCommandOption[];
+   guildID = null;
+   async handler(interaction: CommandInteraction<GuildTextableChannel>) {
+      // code here
+   }
+}

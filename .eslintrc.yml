@@ -1,0 +1,57 @@
+---
+extends:
+   - eslint:recommended
+   - "plugin:@typescript-eslint/eslint-recommended"
+   - "plugin:@typescript-eslint/recommended"
+rules:
+   no-empty:
+      - error
+   no-control-regex: "off"
+   #curly:
+   #   - error
+   no-confusing-arrow: error
+   prefer-const: error
+   object-shorthand:
+      - error
+      - consistent-as-needed
+   object-curly-spacing:
+      - error
+      - always
+   no-trailing-spaces:
+      - error
+   no-var:
+      - error
+   no-prototype-builtins:
+      - error
+   keyword-spacing:
+      - error
+      - before: true
+   array-bracket-spacing:
+      - error
+      - never
+   arrow-parens:
+      - error
+   brace-style:
+      - error
+      - 1tbs
+   sort-class-members/sort-class-members:
+      - error
+      - order:
+           - "[constructor]"
+           - "[alphabetical-getters]"
+           - "[alphabetical-methods]"
+           - "[alphabetical-conventional-private-methods]"
+           - "[everything-else]"
+   # no-console:
+   #    - error
+   "@typescript-eslint/no-namespace": off
+env:
+   es2020: true
+   node: true
+parserOptions:
+   ecmaVersion: 2021
+   sourceType: module
+plugins:
+   - sort-class-members
+   - "@typescript-eslint"
+parser: "@typescript-eslint/parser"

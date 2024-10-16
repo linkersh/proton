@@ -1,0 +1,336 @@
+import { AutomodActions, CustomEmojis } from "../../Constants";
+import {
+   ClientLegacyCommand as Command,
+   ExecuteArgs,
+} from "../../core/structs/ClientLegacyCommand";
+import type { ProtonClient } from "../../core/client/ProtonClient";
+import { AutoMod as AutoModSchema } from "../../core/database/models/GuildConfig";
+import { EmbedBuilder } from "../../utils/EmbedBuilder";
+import { EmbedField } from "eris";
+
+const { GreenTick, RedTick } = CustomEmojis;
+
+const filters = [
+   "attachments",
+   "badwords",
+   "duplicates",
+   "emojis",
+   "invites",
+   "links",
+   "caps",
+   "mentions",
+   "spam",
+   "stickers",
+   "toxicity",
+   "insults",
+   "spammyMessages",
+   "all",
+];
+
+class FieldBuilder {
+   _name = "";
+   _value = "";
+   _inline = true;
+
+   name(name: string) {
+      this._name = name;
+   }
+
+   value(value: string) {
+      this._value = value;
+   }
+
+   inline(inline: boolean) {
+      this._inline = inline;
+   }
+
+   reset() {
+      this._name = "";
+      this._value = "";
+      this._inline = true;
+   }
+
+   export() {
+      const data = [this._name, this._value, this._inline];
+      this.reset();
+      return data as [string, string, boolean];
+   }
+}
+
+class AutoMod extends Command {
+   constructor(client: ProtonClient) {
+      super(client, {
+         name: "automod",
+         description: "View the configuration of automod in this server.",
+         usage: "[filter_name]",
+         aliases: ["am"],
+         commands: [],
+         cooldown: 3000,
+         category: "automod",
+         userPerms: ["manageGuild"],
+         clientPerms: ["sendMessages", "embedLinks"],
+      });
+   }
+   formatActions(bits: number | undefined) {
+      if (!bits) {
+         return "None";
+      }
+      const strings = [];
+      if (bits & AutomodActions.DELETE_MESSAGE) {
+         strings.push("delete");
+      }
+      if (bits & AutomodActions.WARN) {
+         strings.push("warn");
+      }
+      if (bits & AutomodActions.MUTE) {
+         strings.push("mute");
+      }
+      if (bits & AutomodActions.KICK) {
+         strings.push("kick");
+      }
+      if (bits & AutomodActions.BAN) {
+         strings.push("ban");
+      }
+      if (bits & AutomodActions.TIMEOUT) {
+         strings.push("timeout");
+      }
+      return strings.join(", ");
+   }
+   execute({ message, config, prefix }: ExecuteArgs) {
+      const embed = new EmbedBuilder()
+         .title("Auto-Mod Config")
+         .color("theme")
+         .footer(`${prefix}whitelist info <filter_name> | View whitelisted roles/channels`);
+      if (!config.automod) {
+         return this.errorMessage(message, "No filters setup.");
+      }
+
+      const {
+         mentions,
+         spam,
+         attachments,
+         emojis,
+         invites,
+         duplicates,
+         links,
+         stickers,
+         badwords,
+         caps,
+         toxicity,
+         insults,
+         spam_messages,
+         messageRaidLevels,
+         allowedInvites,
+      } = config.automod;
+      const field = new FieldBuilder();
+      if (spam && spam.max_messages > 0 && spam.seconds > 0) {
+         field.name(`${GreenTick} Fast-Message-Spam`);
+      } else {
+         field.name(`${RedTick} Fast-Message-Spam`);
+      }
+      field.value(
+         `**Threshold:** ${(spam && spam.max_messages) || 0}/${
+            (spam && spam.seconds) || 0
+         }\n**Actions:** ${this.formatActions(spam && spam.actions)}`
+      );
+      embed.field(...field.export());
+
+      if (mentions && mentions.max_mentions > 0 && mentions.seconds > 0) {
+         field.name(`${GreenTick} Mention-Spam`);
+      } else {
+         field.name(`${RedTick} Mention-Spam`);
+      }
+      field.value(
+         `**Threshold:** ${(mentions && mentions.max_mentions) || 0}/${
+            (mentions && mentions.seconds) || 0
+         }\n**Actions:** ${this.formatActions(mentions && mentions.actions)}`
+      );
+      embed.field(...field.export());
+
+      if (attachments && attachments.max_attachments > 0 && attachments.seconds > 0) {
+         field.name(`${GreenTick} Attachment-Spam`);
+      } else {
+         field.name(`${RedTick} Attachment-Spam`);
+      }
+      field.value(
+         `**Threshold:** ${(attachments && attachments.max_attachments) || 0}/${
+            (attachments && attachments.seconds) || 0
+         }\n**Actions:** ${this.formatActions(attachments && attachments.actions)}`
+      );
+      embed.field(...field.export());
+
+      if (emojis && emojis.max_emojis > 0 && emojis.seconds > 0) {
+         field.name(`${GreenTick} Emoji-Spam`);
+      } else {
+         field.name(`${RedTick} Emoji-Spam`);
+      }
+      field.value(
+         `**Threshold:** ${(emojis && emojis.max_emojis) || 0}/${
+            (emojis && emojis.seconds) || 0
+         }\n**Actions:** ${this.formatActions(emojis && emojis.actions)}`
+      );
+      embed.field(...field.export());
+
+      if (invites && invites.actions > 0) {
+         field.name(`${GreenTick} Emoji-Spam`);
+      } else {
+         field.name(`${RedTick} Emoji-Spam`);
+      }
+      field.value(
+         `**Whitelisted:** ${allowedInvites?.length || 0}
+         **Actions:** ${this.formatActions(invites?.actions)}`
+      );
+      embed.field(...field.export());
+
+      for (let x = 0; x < filters.length - 1; x++) {
+         let value, name, filter;
+         const filterName = filters[x] as keyof AutoModSchema;
+         if (config.automod && typeof config.automod[filterName] !== "undefined") {
+            filter = config.automod[filterName];
+         } else {
+            filter = {};
+         }
+         switch (filters[x]) {
+            case "emojis": {
+               if (filter.max_emojis > 0 && filter.seconds > 0) {
+                  name = `${Emojis.GreenTick} Emoji spam`;
+               } else {
+                  name = `${Emojis.RedTick} Emoji spam`;
+               }
+               value = `
+                  **Threshold:** ${filter.max_emojis || 0}/${filter.seconds || 0}s
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "invites": {
+               if (filter.actions) {
+                  name = `${Emojis.GreenTick} Server invites`;
+               } else {
+                  name = `${Emojis.RedTick} Server invites`;
+               }
+               value = `
+                  **Whitelisted:** ${config.automod?.allowedInvites?.length || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "duplicates": {
+               if (filter.actions) {
+                  name = `${Emojis.GreenTick} Duplicates`;
+               } else {
+                  name = `${Emojis.RedTick} Duplicates`;
+               }
+               value = `
+                  **Max duplicates:** 9
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "links": {
+               if (filter.actions) {
+                  name = `${Emojis.GreenTick} Link spam`;
+               } else {
+                  name = `${Emojis.RedTick} Link spam`;
+               }
+               value = `
+                  **Threshold:** ${filter.max_links || 0}/${filter.seconds || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "stickers": {
+               if (filter.actions) {
+                  name = `${Emojis.GreenTick} Sticker spam`;
+               } else {
+                  name = `${Emojis.RedTick} Sticker spam`;
+               }
+               value = `
+                  **Threshold:** ${filter.max_stickers || 0}/${filter.seconds || 0}s
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "badwords": {
+               if (filter.actions) {
+                  name = `${Emojis.GreenTick} Badwords`;
+               } else {
+                  name = `${Emojis.RedTick} Badwords`;
+               }
+               value = `
+                  **Badwords:** ${config.automod?.badwordList?.length || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "caps": {
+               if (filter.max_caps > 0) {
+                  name = `${Emojis.GreenTick} Excessive caps`;
+               } else {
+                  name = `${Emojis.RedTick} Excessive caps`;
+               }
+               value = `
+                  **Max caps:** ${filter.max_caps || 0}%
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "toxicity": {
+               if (filter.max_score > 0) {
+                  name = `${Emojis.GreenTick} Toxicity`;
+               } else {
+                  name = `${Emojis.RedTick} Toxicity`;
+               }
+               value = `
+                  **Max score:** ${filter.max_score || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "insults": {
+               if (filter.max_score > 0) {
+                  name = `${Emojis.GreenTick} Insults`;
+               } else {
+                  name = `${Emojis.RedTick} Insults`;
+               }
+               value = `
+                  **Max score:** ${filter.max_score || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+            case "spammyMessages": {
+               if (filter.max_score > 0) {
+                  name = `${Emojis.GreenTick} Spammy/sus messages`;
+               } else {
+                  name = `${Emojis.RedTick} Spammy/sus messages`;
+               }
+               value = `
+                  **Max score:** ${filter.max_score || 0}
+                  **Actions:** ${this._drawActions(filter.actions)}
+                  `;
+               break;
+            }
+         }
+         embed.fields.push({ name: name, value: value, inline: true });
+      }
+      let msgRaidTitle;
+      if (config.automod?.messageRaidLevels?.length > 0) {
+         msgRaidTitle = `${Emojis.GreenTick} Anti message raid`;
+      } else {
+         msgRaidTitle = `${Emojis.RedTick} Anti message raid`;
+      }
+      embed.fields.push({
+         name: msgRaidTitle,
+         value: `**Levels:** ${config.automod?.messageRaidLevels?.length || 0}`,
+         inline: true,
+      });
+      embed.fields.push({
+         name: `Allowed server invites`,
+         value: (config.automod?.allowedInvites || []).join(", ") || "None",
+         inline: true,
+      });
+      message.channel.createMessage({ embeds: [embed] });
+   }
+}
+export default AutoMod;

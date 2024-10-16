@@ -1,0 +1,6 @@
+[submodule "src/ProtonScript"]
+	path = src/ProtonScript
+	url = ssh://apple@144.172.83.241:6369/home/apple/repos/ProtonScript/
+[submodule "packages/ProtonScript"]
+	path = packages/ProtonScript
+	url = ssh://apple@144.172.83.241:6369/home/apple/repos/ProtonScript/

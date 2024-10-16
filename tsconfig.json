@@ -1,0 +1,18 @@
+{
+   "compilerOptions": {
+      "module": "CommonJS",
+      "removeComments": true,
+      "outDir": "dist",
+      "esModuleInterop": true,
+      "target": "ES2021",
+      "strict": true,
+      "alwaysStrict": true,
+      "skipLibCheck": true,
+      "noImplicitAny": true,
+      "moduleResolution": "Node",
+      "incremental": true,
+      "strictNullChecks": true
+   },
+   "include": ["src/**/*"],
+   "exclude": ["node_modules", "dist", "src/deprecated-commands"]
+}

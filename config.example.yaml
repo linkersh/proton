@@ -1,0 +1,23 @@
+clientOptions:
+   intents:
+      - guilds
+      - guildMembers
+      - guildMessages
+      - guildMessageReactions
+   restMode: true
+secret:
+   token: ""
+   mongoUri: ""
+   mongoUser: ~
+   mongoPwd: ~
+   googleApi: ""
+   serverPort: 0000
+mongodbOptions:
+   dbName: "XXX"
+   useNewUrlParser: true
+   useUnifiedTopology: true
+   authSource: ~
+   auth: ~
+testGuild: "898104546000261130"
+admins:
+   - "521677874055479296"
